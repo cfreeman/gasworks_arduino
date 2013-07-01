@@ -37,7 +37,6 @@ const int BRIGHT_LOWER_LE = 5;    // The dimmest the LED will be when at 'Low' E
 const int BRIGHT_UPPER_HE = 255;  // The brightest the LED will be when at 'High' Energy.
 const int BRIGHT_UPPER_LE = 20;   // The brightest the LED will be when at 'Low' Energy.
 
-
 const int NUM_LIGHTS = 6;         // The number of lights (LEDs) that are attached. Must have an entry for each in lights.
 LED lights[] = {{3, 0, 0, 0, 0, false},
                 {5, 0, 0, 0, 0, false},
@@ -111,22 +110,43 @@ void setup() {
   }
 }
 
+/**
+ * Reads the new energy level from the serial port.
+ *
+ * @param energy The target variable for the energy value read from the serial port.
+ */
+void readEnergyLevel(float *energy) {
+  // Wait till we have enough bytes to decode it as a floating point number.
+  if (Serial.available() == 4) {
+    union {
+      byte b[4]; 
+      float f;
+    } ufloat;
+    
+    // We have enough bytes - decode as a float.
+    ufloat.b[0] = Serial.read();
+    ufloat.b[1] = Serial.read();
+    ufloat.b[2] = Serial.read();
+    ufloat.b[3] = Serial.read();    
+    
+    Serial.print("Energy updated: ");
+    Serial.println(ufloat.f);
+
+    *energy = ufloat.f;
+  }
+}
+
 float energy = 0.0f;
 
 /**
  * Main Arduino loop.
  */
-void loop() {
-  // TODO: Read energy level from serial.  
-  
+void loop() {    
+  readEnergyLevel(&energy);
+
   for (int i = 0; i < NUM_LIGHTS; i++) {
     updateLED(i, energy);
-  }
-  
-  energy = energy + 0.000005f;
-  if (energy > 1.0f) {
-    energy = 0.0f;
-  }
+  }  
 }
 
 
