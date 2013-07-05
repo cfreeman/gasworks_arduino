@@ -43,10 +43,17 @@ LED lights[] = {{3, 0, 0, 0, 0, false},
                 {7, 0, 0, 0, 0, false},
                 {9, 0, 0, 0, 0, false},
                 {11, 0, 0, 0, 0, false},
-                {13, 0, 0, 0, 0, false}};
+                {12, 0, 0, 0, 0, false}};
 
 
-
+/**
+ * Performs a linear interpoloation between left and right based on the ratio.
+ *
+ * @param left The left value of the interpolation.
+ * @param right The right value of the interpolation.
+ * @param ratio How far to interpolate between left and right.
+ *
+ */
 int LERP(int left, int right, float ratio) {
   if (left < right) {
     return left + ((right-left)*ratio);
@@ -63,46 +70,40 @@ int LERP(int left, int right, float ratio) {
  * are between 0.0 and 1.0. Where 0.0 represents low energy, 1.0 represents high energy. The 
  * scuplture in a high energy state has a more rapid and brighter sequence.
  */
-void updateLED(int index, float energy) {
+void updateLED(struct LED *light, float energy) {
   unsigned long current_time = millis();
-  
-  // Get the light we will be updating.
-  LED light = lights[index];
 
   // Light has been on - disable and work out next on time.
-  if ((light.on_at + light.duration) < current_time) {
+  if ((light->on_at + light->duration) < current_time) {
 
     // Turn the LED off.
-    analogWrite(light.pin, LOW);
-    light.off_at = current_time;
-    light.on = false;
+    analogWrite(light->pin, LOW);
+    light->off_at = current_time;
+    light->on = false;
 
     // Determine the brightness to use the next time the LED is switched on.
-    light.brightness = random(LERP(BRIGHT_LOWER_LE, BRIGHT_LOWER_HE, energy), 
-                              LERP(BRIGHT_UPPER_LE, BRIGHT_UPPER_HE, energy));
+    light->brightness = random(LERP(BRIGHT_LOWER_LE, BRIGHT_LOWER_HE, energy), 
+                               LERP(BRIGHT_UPPER_LE, BRIGHT_UPPER_HE, energy));
 
     // Determine how long the LED should be on for when turned on.
-    light.duration = random(LERP(DURATION_LE, DURATION_HE, energy));
+    light->duration = random(LERP(DURATION_LE, DURATION_HE, energy));
     
     // Determine when the LED should turn on.
-    light.on_at = current_time + random(LERP(COOLDOWN_LE, COOLDOWN_HE, energy));
+    light->on_at = current_time + random(LERP(COOLDOWN_LE, COOLDOWN_HE, energy));
   }
 
   // Light has been off - enable it.
-  if (!light.on && current_time >= light.on_at) {
-    analogWrite(light.pin, light.brightness);
-    light.on = true;
+  if (!light->on && current_time >= light->on_at) {
+    analogWrite(light->pin, light->brightness);
+    light->on = true;
   }
-
-  // Save the changes we just made to the light we updated.
-  lights[index] = light;
 }
 
 /**
  * Arduino initalisation.
  */
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600);  
   
   // initialize the digital pin as an output.
   for (int i = 0; i < NUM_LIGHTS; i++) {
@@ -110,42 +111,38 @@ void setup() {
   }
 }
 
+float energy = 0.0f;
+
 /**
- * Reads the new energy level from the serial port.
- *
- * @param energy The target variable for the energy value read from the serial port.
+ * SerialEvent occurs whenever a new data comes in the
+ * hardware serial RX.  This routine is run between each
+ * time loop() runs, so using delay inside loop can delay
+ * response.  Multiple bytes of data may be available.
  */
-void readEnergyLevel(float *energy) {
+void serialEvent() {  
   // Wait till we have enough bytes to decode it as a floating point number.
-  if (Serial.available() == 4) {
+  if (Serial.available() >= 4) {
     union {
-      byte b[4]; 
+      byte b[4];   
       float f;
     } ufloat;
-    
-    // We have enough bytes - decode as a float.
-    ufloat.b[0] = Serial.read();
+
+    // We have enough bytes - decode as a float.  
+    ufloat.b[0] = Serial.read();   
     ufloat.b[1] = Serial.read();
     ufloat.b[2] = Serial.read();
     ufloat.b[3] = Serial.read();    
-    
-    Serial.print("Energy updated: ");
-    Serial.println(ufloat.f);
 
-    *energy = ufloat.f;
-  }
+    energy = ufloat.f;
+  }  
 }
-
-float energy = 0.0f;
 
 /**
  * Main Arduino loop.
  */
-void loop() {    
-  readEnergyLevel(&energy);
-
+void loop() {
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    updateLED(i, energy);
+    updateLED(&lights[i], energy);
   }  
 }
 
