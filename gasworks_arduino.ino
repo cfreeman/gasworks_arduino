@@ -37,13 +37,20 @@ const int BRIGHT_LOWER_LE = 5;    // The dimmest the LED will be when at 'Low' E
 const int BRIGHT_UPPER_HE = 255;  // The brightest the LED will be when at 'High' Energy.
 const int BRIGHT_UPPER_LE = 20;   // The brightest the LED will be when at 'Low' Energy.
 
-const int NUM_LIGHTS = 6;         // The number of lights (LEDs) that are attached. Must have an entry for each in lights.
-LED lights[] = {{3, 0, 0, 0, 0, false},
+const int NUM_LIGHTS = 13;         // The number of lights (LEDs) that are attached. Must have an entry for each in lights.
+LED lights[] = {{1, 0, 0, 0, 0, false},
+                {2, 0, 0, 0, 0, false},
+                {3, 0, 0, 0, 0, false},
+                {4, 0, 0, 0, 0, false},
                 {5, 0, 0, 0, 0, false},
+                {6, 0, 0, 0, 0, false},
                 {7, 0, 0, 0, 0, false},
+                {8, 0, 0, 0, 0, false},
                 {9, 0, 0, 0, 0, false},
+                {10, 0, 0, 0, 0, false},
                 {11, 0, 0, 0, 0, false},
-                {12, 0, 0, 0, 0, false}};
+                {12, 0, 0, 0, 0, false},
+                {13, 0, 0, 0, 0, false}};
 
 
 /**
@@ -62,15 +69,19 @@ int LERP(int left, int right, float ratio) {
   }
 }
 
-/**
- * Updates the state of one of the attached LEDs.
- *
- * @param index The index of the LED to update.
- * @param energy The energy level to use when updating the state of the LED. Valid energy levels
- * are between 0.0 and 1.0. Where 0.0 represents low energy, 1.0 represents high energy. The 
- * scuplture in a high energy state has a more rapid and brighter sequence.
- */
-void updateLED(struct LED *light, float energy) {
+void disabledMode(struct LED *light, float energy) {
+  if (light->on) {
+    analogWrite(light->pin, 0);
+    light-> on = false;
+    light->off_at = millis();
+  }
+}
+
+void nonInteractiveMode(struct LED *light, float energy) {
+  analogWrite(light->pin, 255);
+}
+
+void interactiveMode(struct LED *light, float energy) {
   unsigned long current_time = millis();
 
   // Light has been on - disable and work out next on time.
@@ -100,6 +111,24 @@ void updateLED(struct LED *light, float energy) {
 }
 
 /**
+ * Updates the state of one of the attached LEDs.
+ *
+ * @param index The index of the LED to update.
+ * @param energy The energy level to use when updating the state of the LED. Valid energy levels
+ * are between 0.0 and 1.0. Where 0.0 represents low energy, 1.0 represents high energy. The 
+ * scuplture in a high energy state has a more rapid and brighter sequence.
+ */
+void updateLED(struct LED *light, float energy) {
+  if (energy < -1.0) {
+    disabledMode(light, energy);
+  } else if (energy >= -1.0 && energy < 0.0) {
+    nonInteractiveMode(light, energy);
+  } else {
+    interactiveMode(light, energy);
+  }
+}
+
+/**
  * Arduino initalisation.
  */
 void setup() {
@@ -111,7 +140,11 @@ void setup() {
   }
 }
 
-float energy = 0.0f;
+// Energy level ranges from -2.0 to 1.0
+// An Energy level less than -1.0 disables the sculpture completely.
+// An Energy level between -1.0 and 0.0 is a non-interactive sequence.
+// An Energy level between 0.0 and 1.0 is for the interactive sequence.
+float energy = -2.0f;
 
 /**
  * SerialEvent occurs whenever a new data comes in the
@@ -141,6 +174,10 @@ void serialEvent() {
  * Main Arduino loop.
  */
 void loop() {
+  if (energy < 0.9) {
+    energy += 0.0001;
+  }
+
   for (int i = 0; i < NUM_LIGHTS; i++) {
     updateLED(&lights[i], energy);
   }  
