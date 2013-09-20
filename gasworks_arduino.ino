@@ -37,6 +37,14 @@ const int BRIGHT_LOWER_LE = 5;    // The dimmest the LED will be when at 'Low' E
 const int BRIGHT_UPPER_HE = 255;  // The brightest the LED will be when at 'High' Energy.
 const int BRIGHT_UPPER_LE = 20;   // The brightest the LED will be when at 'Low' Energy.
 
+
+// Non-interactive warmup mode constants.
+const int WARM_UP_DURATION_HE = 0;
+const int WARM_UP_DURATION_LE = 3000;
+
+const int WARM_UP_BRIGHT_LE = 255;
+const int WARM_UP_BRIGHT_HE = 20;
+
 const int NUM_LIGHTS = 13;         // The number of lights (LEDs) that are attached. Must have an entry for each in lights.
 LED lights[] = {{1, 0, 0, 0, 0, false},
                 {2, 0, 0, 0, 0, false},
@@ -78,7 +86,29 @@ void disabledMode(struct LED *light, float energy) {
 }
 
 void nonInteractiveMode(struct LED *light, float energy) {
-  analogWrite(light->pin, 255);
+  unsigned long current_time = millis();
+
+  if (!light->on) {
+    light->brightness = LERP(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, energy);
+    light->on_at = current_time;
+    light->off_at = light->on_at + 2000; //LERP(WARM_UP_DURATION_LE, WARM_UP_DURATION_HE, energy);
+    light->on = true;
+  }
+  
+  double delta_t = 0.0;
+  if (current_time < light->off_at) {
+    delta_t = ((light->off_at - current_time) / (double) light->off_at);
+  } else {
+    light->on = false;
+  }
+  
+    Serial.print(delta_t);    
+    Serial.print(" ");
+    Serial.print((255 - LERP(light->brightness, 0, delta_t)));
+    Serial.print("\n");
+  analogWrite(light->pin, (255 - LERP(light->brightness, 0, delta_t)));
+  
+
 }
 
 void interactiveMode(struct LED *light, float energy) {
@@ -136,7 +166,7 @@ void setup() {
   
   // initialize the digital pin as an output.
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    pinMode(lights[i].pin, OUTPUT);
+    pinMode(lights[i].pin, OUTPUT);    
   }
 }
 
@@ -178,9 +208,9 @@ void loop() {
     energy += 0.0001;
   }
 
-  for (int i = 0; i < NUM_LIGHTS; i++) {
-    updateLED(&lights[i], energy);
-  }  
+//  for (int i = 0; i < NUM_LIGHTS; i++) {
+    updateLED(&lights[5], energy);
+//  }  
 }
 
 
