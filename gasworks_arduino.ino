@@ -97,15 +97,16 @@ void nonInteractiveMode(struct LED *light, float energy) {
   double delta_t = 0.0;  
 
   if (current_time < light->off_at) {
+    light->on = true;
     delta_t = ((light->off_at - current_time) / (double) light->off_at);
     analogWrite(light->pin, LERPDesc(light->brightness, 0, delta_t));
   } else {
     analogWrite(light->pin, 0);
+    light->on = false;
     light->brightness = LERPDesc(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, energy);
     light->on_at = current_time;
     light->off_at = light->on_at + random(LERPDesc(WARM_UP_LOWER_DURATION_LE, WARM_UP_LOWER_DURATION_HE, energy),
                                           LERPDesc(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, energy));
-    light->on = true;
   }
 }
 
