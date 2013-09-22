@@ -39,8 +39,11 @@ const int BRIGHT_UPPER_LE = 20;   // The brightest the LED will be when at 'Low'
 
 
 // Non-interactive warmup mode constants.
-const int WARM_UP_DURATION_HE = 0;
-const int WARM_UP_DURATION_LE = 3000;
+const int WARM_UP_LOWER_DURATION_HE = 0;
+const int WARM_UP_LOWER_DURATION_LE = 2500;
+
+const int WARM_UP_UPPER_DURATION_HE = 0;
+const int WARM_UP_UPPER_DURATION_LE = 3000;
 
 const int WARM_UP_BRIGHT_LE = 255;
 const int WARM_UP_BRIGHT_HE = 20;
@@ -77,6 +80,10 @@ int LERP(int left, int right, float ratio) {
   }
 }
 
+int LERPDesc(int left, int right, float ratio) {
+  return left - LERP(left, right, abs(ratio));
+}
+
 void disabledMode(struct LED *light, float energy) {
   if (light->on) {
     analogWrite(light->pin, 0);
@@ -87,28 +94,19 @@ void disabledMode(struct LED *light, float energy) {
 
 void nonInteractiveMode(struct LED *light, float energy) {
   unsigned long current_time = millis();
+  double delta_t = 0.0;  
 
-  if (!light->on) {
-    light->brightness = LERP(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, energy);
-    light->on_at = current_time;
-    light->off_at = light->on_at + 2000; //LERP(WARM_UP_DURATION_LE, WARM_UP_DURATION_HE, energy);
-    light->on = true;
-  }
-  
-  double delta_t = 0.0;
   if (current_time < light->off_at) {
     delta_t = ((light->off_at - current_time) / (double) light->off_at);
+    analogWrite(light->pin, LERPDesc(light->brightness, 0, delta_t));
   } else {
-    light->on = false;
+    analogWrite(light->pin, 0);
+    light->brightness = LERPDesc(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, energy);
+    light->on_at = current_time;
+    light->off_at = light->on_at + random(LERPDesc(WARM_UP_LOWER_DURATION_LE, WARM_UP_LOWER_DURATION_HE, energy),
+                                          LERPDesc(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, energy));
+    light->on = true;
   }
-  
-    Serial.print(delta_t);    
-    Serial.print(" ");
-    Serial.print((255 - LERP(light->brightness, 0, delta_t)));
-    Serial.print("\n");
-  analogWrite(light->pin, (255 - LERP(light->brightness, 0, delta_t)));
-  
-
 }
 
 void interactiveMode(struct LED *light, float energy) {
@@ -208,9 +206,9 @@ void loop() {
     energy += 0.0001;
   }
 
-//  for (int i = 0; i < NUM_LIGHTS; i++) {
-    updateLED(&lights[5], energy);
-//  }  
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    updateLED(&lights[i], energy);
+  }  
 }
 
 
