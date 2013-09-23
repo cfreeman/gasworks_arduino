@@ -39,11 +39,12 @@ const int BRIGHT_UPPER_LE = 20;   // The brightest the LED will be when at 'Low'
 
 
 // Non-interactive warmup mode constants.
-const int WARM_UP_LOWER_DURATION_HE = 0;
-const int WARM_UP_LOWER_DURATION_LE = 2500;
 
-const int WARM_UP_UPPER_DURATION_HE = 0;
+const int WARM_UP_LOWER_DURATION_LE = 2500;
 const int WARM_UP_UPPER_DURATION_LE = 3000;
+
+const int WARM_UP_COOLDOWN_LE = 3000;
+const int WARM_UP_COOLDOWN_HE = 0;
 
 const int WARM_UP_BRIGHT_LE = 255;
 const int WARM_UP_BRIGHT_HE = 20;
@@ -94,9 +95,9 @@ void disabledMode(struct LED *light, float energy) {
 
 void nonInteractiveMode(struct LED *light, float energy) {
   unsigned long current_time = millis();
-  double delta_t = 0.0;  
+  double delta_t = 0.0;
 
-  if (current_time < light->off_at) {
+  if (current_time >= light->on_at && current_time < light->off_at) {
     light->on = true;
     delta_t = ((light->off_at - current_time) / (double) light->off_at);
     analogWrite(light->pin, LERPDesc(light->brightness, 0, delta_t));
@@ -104,9 +105,10 @@ void nonInteractiveMode(struct LED *light, float energy) {
     analogWrite(light->pin, 0);
     light->on = false;
     light->brightness = LERPDesc(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, energy);
-    light->on_at = current_time;
-    light->off_at = light->on_at + random(LERPDesc(WARM_UP_LOWER_DURATION_LE, WARM_UP_LOWER_DURATION_HE, energy),
-                                          LERPDesc(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, energy));
+    light->on_at = current_time + random(WARM_UP_COOLDOWN_LE - LERPDesc(WARM_UP_COOLDOWN_LE, WARM_UP_COOLDOWN_HE, energy));
+
+    light->duration = random(WARM_UP_LOWER_DURATION_LE, WARM_UP_UPPER_DURATION_LE);
+    light->off_at = light->on_at + light->duration;
   }
 }
 
@@ -203,8 +205,12 @@ void serialEvent() {
  * Main Arduino loop.
  */
 void loop() {
-  if (energy < 0.9) {
-    energy += 0.0001;
+  //if (energy < 0.1) {
+    energy += 0.00005;
+  //}
+
+  if (energy >= 1.0) {
+    energy = 0;
   }
 
   for (int i = 0; i < NUM_LIGHTS; i++) {
