@@ -99,7 +99,7 @@ void nonInteractiveMode(struct LED *light, float energy) {
 
   if (current_time >= light->on_at && current_time < light->off_at) {
     light->on = true;
-    delta_t = ((light->off_at - current_time) / (double) light->off_at);
+    delta_t = ((light->off_at - current_time) / (double) light->duration);
     analogWrite(light->pin, LERPDesc(light->brightness, 0, delta_t));
   } else {
     analogWrite(light->pin, 0);
@@ -205,17 +205,17 @@ void serialEvent() {
  * Main Arduino loop.
  */
 void loop() {
-  //if (energy < 0.1) {
-    energy += 0.00005;
-  //}
-
-  if (energy >= 1.0) {
-    energy = 0;
-  }
+//  if (energy >= 1.0) {
+//    energy = -1.0;
+//  }
+//  energy += 0.0001;
 
   for (int i = 0; i < NUM_LIGHTS; i++) {
     updateLED(&lights[i], energy);
-  }  
+  }
+
+//  Serial.print(energy);
+//  Serial.print('\n');
 }
 
 
