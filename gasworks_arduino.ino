@@ -184,21 +184,30 @@ float energy = -2.0f;
  * response.  Multiple bytes of data may be available.
  */
 void serialEvent() {  
-  // Wait till we have enough bytes to decode it as a floating point number.
-  if (Serial.available() >= 4) {
+  if (Serial.available() >= 5) {
     union {
-      byte b[4];   
+      char b[4];
       float f;
     } ufloat;
 
-    // We have enough bytes - decode as a float.  
-    ufloat.b[0] = Serial.read();   
-    ufloat.b[1] = Serial.read();
-    ufloat.b[2] = Serial.read();
-    ufloat.b[3] = Serial.read();    
+    char command = Serial.read();
+    Serial.readBytes(ufloat.b, 4);
 
-    energy = ufloat.f;
-  }  
+    switch (command) {
+      case 'e':
+        Serial.print(ufloat.f);
+        Serial.print("\n");
+        energy = ufloat.f;
+        break;
+      case 'a':
+        // handle the animation.
+        Serial.print("animation\n");
+        break;
+      default:
+        // Unknown command - ignore it.
+        break;
+    }
+  }
 }
 
 /**
