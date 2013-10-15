@@ -37,6 +37,8 @@ const int BRIGHT_LOWER_LE = 5;    // The dimmest the LED will be when at 'Low' E
 const int BRIGHT_UPPER_HE = 255;  // The brightest the LED will be when at 'High' Energy.
 const int BRIGHT_UPPER_LE = 20;   // The brightest the LED will be when at 'Low' Energy.
 
+const int POWERUP_LENGTH = 4000;  // The length of the power up animation in milliseconds.
+
 
 // Non-interactive warmup mode constants.
 
@@ -141,21 +143,14 @@ void interactiveMode(struct LED *light, float energy) {
   }
 }
 
-/**
- * Updates the state of one of the attached LEDs.
- *
- * @param index The index of the LED to update.
- * @param energy The energy level to use when updating the state of the LED. Valid energy levels
- * are between 0.0 and 1.0. Where 0.0 represents low energy, 1.0 represents high energy. The 
- * scuplture in a high energy state has a more rapid and brighter sequence.
- */
-void updateLED(struct LED *light, float energy) {
-  if (energy < -1.0) {
-    disabledMode(light, energy);
-  } else if (energy >= -1.0 && energy < 0.0) {
-    nonInteractiveMode(light, energy);
+void powerupAnimation(struct LED *light, unsigned long started_at) {
+  unsigned long current_time = millis();
+  double delta_t = (current_time - started_at) / ((double) POWERUP_LENGTH);
+
+  if (light->on) {
+    analogWrite(light->pin, LERP(light->brightness, 255, delta_t));
   } else {
-    interactiveMode(light, energy);
+    analogWrite(light->pin, LERP(0, 255, delta_t));
   }
 }
 
@@ -176,6 +171,8 @@ void setup() {
 // An Energy level between -1.0 and 0.0 is a non-interactive sequence.
 // An Energy level between 0.0 and 1.0 is for the interactive sequence.
 float energy = -2.0f;
+boolean powerup = false;
+unsigned long powerup_started_at = 0;
 
 /**
  * SerialEvent occurs whenever a new data comes in the
@@ -195,14 +192,15 @@ void serialEvent() {
 
     switch (command) {
       case 'e':
-        Serial.print(ufloat.f);
-        Serial.print("\n");
         energy = ufloat.f;
         break;
+
       case 'a':
         // handle the animation.
-        Serial.print("animation\n");
+        powerup_started_at = millis();
+        powerup = true;
         break;
+
       default:
         // Unknown command - ignore it.
         break;
@@ -214,18 +212,24 @@ void serialEvent() {
  * Main Arduino loop.
  */
 void loop() {
-//  if (energy >= 1.0) {
-//    energy = -1.0;
-//  }
-//  energy += 0.0001;
-
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    updateLED(&lights[i], energy);
+      if (powerup) {
+        powerupAnimation(&lights[i], powerup_started_at);
+
+      } else {
+        if (energy < -1.0) {
+          disabledMode(&lights[i], energy);
+        } else if (energy >= -1.0 && energy < 0.0) {
+          nonInteractiveMode(&lights[i], energy);
+        } else {
+          interactiveMode(&lights[i], energy);
+        }
+      }
   }
 
-//  Serial.print(energy);
-//  Serial.print('\n');
+  // Turn the power up animation off after it has completed.
+  if (powerup && millis() >= (powerup_started_at + POWERUP_LENGTH)) {
+    powerup = false;
+  }
 }
-
-
 
