@@ -37,7 +37,7 @@ const int BRIGHT_LOWER_LE = 5;    // The dimmest the LED will be when at 'Low' E
 const int BRIGHT_UPPER_HE = 255;  // The brightest the LED will be when at 'High' Energy.
 const int BRIGHT_UPPER_LE = 20;   // The brightest the LED will be when at 'Low' Energy.
 
-const int POWERUP_LENGTH = 4000;  // The length of the power up animation in milliseconds.
+const int POWERUP_LENGTH = 3000;  // The length of the power up animation in milliseconds.
 
 
 // Non-interactive warmup mode constants.
@@ -145,7 +145,7 @@ void interactiveMode(struct LED *light, float energy) {
 
 void powerupAnimation(struct LED *light, unsigned long started_at) {
   unsigned long current_time = millis();
-  double delta_t = (current_time - started_at) / ((double) POWERUP_LENGTH);
+  double delta_t = max((current_time - started_at) / ((double) POWERUP_LENGTH) - 0.3, 0.0);
 
   if (light->on) {
     analogWrite(light->pin, LERP(light->brightness, 255, delta_t));
