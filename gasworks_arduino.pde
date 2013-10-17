@@ -16,14 +16,8 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-typedef struct LED {
-  int pin;                // The pin that the LED is connected too.
-  int brightness;         // The current brightness of the LED.
-  int duration;           // The duration that the LED will be illuminated for this flash.
-  unsigned long off_at;   // The time the LED was turned off.
-  unsigned long on_at;    // The time the LED was turned on.
-  boolean on;             // Is the LED on?
-};
+#include "Arduino.h"
+#include "gasworks.h"
 
 const int DURATION_HE = 250;      // The duration the LED will be on for when at 'High' energy.
 const int DURATION_LE = 3000;     // The duration the LED will be on for when at 'Low' energy.
@@ -87,15 +81,15 @@ int LERPDesc(int left, int right, float ratio) {
   return left - LERP(left, right, abs(ratio));
 }
 
-void disabledMode(struct LED *light, float energy) {
+void disabledMode(LED *light, float energy, unsigned long started_at) {
   if (light->on) {
     analogWrite(light->pin, 0);
-    light-> on = false;
+    light->on = false;
     light->off_at = millis();
   }
 }
 
-void nonInteractiveMode(struct LED *light, float energy) {
+void nonInteractiveMode(LED *light, float energy, unsigned long started_at) {
   unsigned long current_time = millis();
   double delta_t = 0.0;
 
@@ -114,7 +108,7 @@ void nonInteractiveMode(struct LED *light, float energy) {
   }
 }
 
-void interactiveMode(struct LED *light, float energy) {
+void interactiveMode(LED *light, float energy, unsigned long started_at) {
   unsigned long current_time = millis();
 
   // Light has been on - disable and work out next on time.
@@ -126,12 +120,12 @@ void interactiveMode(struct LED *light, float energy) {
     light->on = false;
 
     // Determine the brightness to use the next time the LED is switched on.
-    light->brightness = random(LERP(BRIGHT_LOWER_LE, BRIGHT_LOWER_HE, energy), 
+    light->brightness = random(LERP(BRIGHT_LOWER_LE, BRIGHT_LOWER_HE, energy),
                                LERP(BRIGHT_UPPER_LE, BRIGHT_UPPER_HE, energy));
 
     // Determine how long the LED should be on for when turned on.
     light->duration = random(LERP(DURATION_LE, DURATION_HE, energy));
-    
+
     // Determine when the LED should turn on.
     light->on_at = current_time + random(LERP(COOLDOWN_LE, COOLDOWN_HE, energy));
   }
@@ -143,7 +137,7 @@ void interactiveMode(struct LED *light, float energy) {
   }
 }
 
-void powerupAnimation(struct LED *light, unsigned long started_at) {
+void powerupAnimation(LED *light, float energy, unsigned long started_at) {
   unsigned long current_time = millis();
   double delta_t = max((current_time - started_at) / ((double) POWERUP_LENGTH) - 0.3, 0.0);
 
@@ -157,13 +151,18 @@ void powerupAnimation(struct LED *light, unsigned long started_at) {
 /**
  * Arduino initalisation.
  */
+UpdateStrategy strategy;
+
 void setup() {
-  Serial.begin(9600);  
-  
-  // initialize the digital pin as an output.
+  Serial.begin(9600);
+
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    pinMode(lights[i].pin, OUTPUT);    
+    pinMode(lights[i].pin, OUTPUT);
   }
+
+  strategy.updateState = &disabledMode;
+  strategy.energy = -2.0;
+  strategy.started_at = millis();
 }
 
 // Energy level ranges from -2.0 to 1.0
@@ -174,37 +173,35 @@ float energy = -2.0f;
 boolean powerup = false;
 unsigned long powerup_started_at = 0;
 
-/**
- * SerialEvent occurs whenever a new data comes in the
- * hardware serial RX.  This routine is run between each
- * time loop() runs, so using delay inside loop can delay
- * response.  Multiple bytes of data may be available.
- */
-void serialEvent() {  
-  if (Serial.available() >= 5) {
-    union {
-      char b[4];
-      float f;
-    } ufloat;
+Command readCommand() {
+  // Not enough bytes for a command, return an empty command.
+  if (Serial.available() < 5) {
+    return (Command) {'*', 0.0, 0};
+  }
 
-    char command = Serial.read();
-    Serial.readBytes(ufloat.b, 4);
+  union {
+    char b[4];
+    float f;
+  } ufloat;
 
-    switch (command) {
-      case 'e':
-        energy = ufloat.f;
-        break;
+  // Read the command identifier and argument from the serial port.
+  char c = Serial.read();
+  Serial.readBytes(ufloat.b, 4);
+  return (Command) {c, ufloat.f, millis()};
+}
 
-      case 'a':
-        // handle the animation.
-        powerup_started_at = millis();
-        powerup = true;
-        break;
+UpdateStrategy determineStrategy(UpdateStrategy currentStrategy, Command newCommand) {
+  UpdateStrategy
 
-      default:
-        // Unknown command - ignore it.
-        break;
+  if (newCommand.instruction == 'e') {
+    if (newCommand.argument < -1.0) {
+
     }
+
+  } else if (newCommand.instruction == 'a') {
+
+  } else {
+
   }
 }
 
@@ -212,6 +209,20 @@ void serialEvent() {
  * Main Arduino loop.
  */
 void loop() {
+  strategy = determineStrategy(strategy, readCommand());
+
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    strategy.updateState(&lights[i], strategy.energy, strategy.started_at);
+
+    // Write to the light state to the arduino pin.
+    // if (lights[i].on) {
+    //   analogWrite(lights[i].pin, lights[i].brightness);
+    // } else {
+    //   analogWrite(lights[i].pin, LOW);
+    // }
+  }
+
+  /*
   for (int i = 0; i < NUM_LIGHTS; i++) {
       if (powerup) {
         powerupAnimation(&lights[i], powerup_started_at);
@@ -230,6 +241,5 @@ void loop() {
   // Turn the power up animation off after it has completed.
   if (powerup && millis() >= (powerup_started_at + POWERUP_LENGTH)) {
     powerup = false;
-  }
+  }*/
 }
-
