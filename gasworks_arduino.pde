@@ -81,12 +81,40 @@ int LERPDesc(int left, int right, float ratio) {
   return left - LERP(left, right, abs(ratio));
 }
 
-void disabledMode(LED *light, float energy, unsigned long started_at) {
+State DisabledMode(LED *light, State current_state, Command command) {
   if (light->on) {
-    analogWrite(light->pin, 0);
+    //analogWrite(light->pin, 0);
     light->on = false;
-    light->off_at = millis();
+    light->off_at = command.arrived_at;
   }
+
+  if (command.instruction == 'e') {
+    return (State) {command.argument, command.arrived_at, &InteractiveMode};
+
+  }
+
+  return current_state;
+}
+
+State InteractiveMode(LED *light, State current_state, Command command) {
+
+}
+
+State PowerupMode(LED *light, State current_state, Command command) {
+  unsigned long current_time = millis();
+  double delta_t = max((current_time - started_at) / ((double) POWERUP_LENGTH) - 0.3, 0.0);
+
+  if (light->on) {
+    analogWrite(light->pin, LERP(light->brightness, 255, delta_t));
+  } else {
+    analogWrite(light->pin, LERP(0, 255, delta_t));
+  }
+
+  if (current_time >= (current_state.started_at + POWERUP_LENGTH)) {
+    return (State) {0.0, current_time, &InteractiveMode};
+  }
+
+  return current_state;
 }
 
 void nonInteractiveMode(LED *light, float energy, unsigned long started_at) {
@@ -151,7 +179,7 @@ void powerupAnimation(LED *light, float energy, unsigned long started_at) {
 /**
  * Arduino initalisation.
  */
-UpdateStrategy strategy;
+State state;
 
 void setup() {
   Serial.begin(9600);
@@ -160,9 +188,9 @@ void setup() {
     pinMode(lights[i].pin, OUTPUT);
   }
 
-  strategy.updateState = &disabledMode;
-  strategy.energy = -2.0;
-  strategy.started_at = millis();
+  state.energy = 0.0;
+  state.started_at = millis();
+  state.updateState = &DisabledMode;
 }
 
 // Energy level ranges from -2.0 to 1.0
@@ -190,29 +218,16 @@ Command readCommand() {
   return (Command) {c, ufloat.f, millis()};
 }
 
-UpdateStrategy determineStrategy(UpdateStrategy currentStrategy, Command newCommand) {
-  UpdateStrategy
-
-  if (newCommand.instruction == 'e') {
-    if (newCommand.argument < -1.0) {
-
-    }
-
-  } else if (newCommand.instruction == 'a') {
-
-  } else {
-
-  }
-}
-
 /**
  * Main Arduino loop.
  */
 void loop() {
-  strategy = determineStrategy(strategy, readCommand());
+  Command c = readCommand();
 
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    strategy.updateState(&lights[i], strategy.energy, strategy.started_at);
+    state = state.updateState(&lights[i], state, c);
+
+    //strategy.updateState(&lights[i], strategy.energy, strategy.started_at);
 
     // Write to the light state to the arduino pin.
     // if (lights[i].on) {

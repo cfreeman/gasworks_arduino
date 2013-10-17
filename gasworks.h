@@ -23,13 +23,18 @@ typedef struct {
  * energy is the current energy level to use with the lighting strategy.
  * started_at is when the current strategy for updating the state of the led began.
  */
-typedef void (*StateUpdater)(LED *light, float energy, unsigned long started_at);
+typedef struct State_struct (*StateFn)(LED *light, struct State_struct current_state, Command command);
 
-
-typedef struct {
+typedef struct State_struct {
   float energy;
   unsigned long started_at;
-  StateUpdater updateState;
-} UpdateStrategy;
+  StateFn updateState;
+} State;
+
+State DisabledMode(LED *light, State current_state, Command command);
+
+State InteractiveMode(LED *light, State current_state, Command command);
+
+State PowerupMode(LED *light, State current_state, Command command);
 
 #endif
