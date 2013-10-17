@@ -33,9 +33,6 @@ const int BRIGHT_UPPER_LE = 20;   // The brightest the LED will be when at 'Low'
 
 const int POWERUP_LENGTH = 3000;  // The length of the power up animation in milliseconds.
 
-
-// Non-interactive warmup mode constants.
-
 const int WARM_UP_LOWER_DURATION_LE = 2500;
 const int WARM_UP_UPPER_DURATION_LE = 3000;
 
@@ -44,21 +41,6 @@ const int WARM_UP_COOLDOWN_HE = 0;
 
 const int WARM_UP_BRIGHT_LE = 255;
 const int WARM_UP_BRIGHT_HE = 20;
-
-const int NUM_LIGHTS = 13;         // The number of lights (LEDs) that are attached. Must have an entry for each in lights.
-LED lights[] = {{1, 0, 0, 0, 0, false},
-                {2, 0, 0, 0, 0, false},
-                {3, 0, 0, 0, 0, false},
-                {4, 0, 0, 0, 0, false},
-                {5, 0, 0, 0, 0, false},
-                {6, 0, 0, 0, 0, false},
-                {7, 0, 0, 0, 0, false},
-                {8, 0, 0, 0, 0, false},
-                {9, 0, 0, 0, 0, false},
-                {10, 0, 0, 0, 0, false},
-                {11, 0, 0, 0, 0, false},
-                {12, 0, 0, 0, 0, false},
-                {13, 0, 0, 0, 0, false}};
 
 
 /**
@@ -201,11 +183,25 @@ Command ReadCommand() {
   return (Command) {c, ufloat.f};
 }
 
+const int NUM_LIGHTS = 13;
+LED lights[] = {{1, 0, 0, 0, 0, false},
+                {2, 0, 0, 0, 0, false},
+                {3, 0, 0, 0, 0, false},
+                {4, 0, 0, 0, 0, false},
+                {5, 0, 0, 0, 0, false},
+                {6, 0, 0, 0, 0, false},
+                {7, 0, 0, 0, 0, false},
+                {8, 0, 0, 0, 0, false},
+                {9, 0, 0, 0, 0, false},
+                {10, 0, 0, 0, 0, false},
+                {11, 0, 0, 0, 0, false},
+                {12, 0, 0, 0, 0, false},
+                {13, 0, 0, 0, 0, false}};
+State state;
+
 /**
  * Arduino initalisation.
  */
-State state;
-
 void setup() {
   Serial.begin(9600);
 
