@@ -13,7 +13,6 @@ typedef struct {
 typedef struct {
   char instruction;
   float argument;
-  unsigned long arrived_at;
 } Command;
 
 /**
@@ -32,6 +31,8 @@ typedef struct State_struct {
 } State;
 
 State DisabledMode(LED *light, State current_state, Command command);
+
+State CooldownMode(LED *light, State current_state, Command command);
 
 State InteractiveMode(LED *light, State current_state, Command command);
 

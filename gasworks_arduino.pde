@@ -82,42 +82,23 @@ int LERPDesc(int left, int right, float ratio) {
 }
 
 State DisabledMode(LED *light, State current_state, Command command) {
+  unsigned long current_time = millis();
   if (light->on) {
-    //analogWrite(light->pin, 0);
+    analogWrite(light->pin, 0);
     light->on = false;
-    light->off_at = command.arrived_at;
+    light->off_at = current_time;
   }
 
   if (command.instruction == 'e') {
-    return (State) {command.argument, command.arrived_at, &InteractiveMode};
-
+    return (State) {command.argument, current_time, &InteractiveMode};
+  } else if (command.instruction == 'c') {
+    return (State) {command.argument, current_time, &CooldownMode};
   }
 
   return current_state;
 }
 
-State InteractiveMode(LED *light, State current_state, Command command) {
-
-}
-
-State PowerupMode(LED *light, State current_state, Command command) {
-  unsigned long current_time = millis();
-  double delta_t = max((current_time - started_at) / ((double) POWERUP_LENGTH) - 0.3, 0.0);
-
-  if (light->on) {
-    analogWrite(light->pin, LERP(light->brightness, 255, delta_t));
-  } else {
-    analogWrite(light->pin, LERP(0, 255, delta_t));
-  }
-
-  if (current_time >= (current_state.started_at + POWERUP_LENGTH)) {
-    return (State) {0.0, current_time, &InteractiveMode};
-  }
-
-  return current_state;
-}
-
-void nonInteractiveMode(LED *light, float energy, unsigned long started_at) {
+State CooldownMode(LED *light, State current_state, Command command) {
   unsigned long current_time = millis();
   double delta_t = 0.0;
 
@@ -128,18 +109,28 @@ void nonInteractiveMode(LED *light, float energy, unsigned long started_at) {
   } else {
     analogWrite(light->pin, 0);
     light->on = false;
-    light->brightness = LERPDesc(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, energy);
-    light->on_at = current_time + random(WARM_UP_COOLDOWN_LE - LERPDesc(WARM_UP_COOLDOWN_LE, WARM_UP_COOLDOWN_HE, energy));
+    light->brightness = LERPDesc(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, current_state.energy);
+    light->on_at = current_time + random(WARM_UP_COOLDOWN_LE - LERPDesc(WARM_UP_COOLDOWN_LE, WARM_UP_COOLDOWN_HE, current_state.energy));
 
     light->duration = random(WARM_UP_LOWER_DURATION_LE, WARM_UP_UPPER_DURATION_LE);
     light->off_at = light->on_at + light->duration;
   }
+
+  if (command.instruction == 'a') {
+    return (State) {0.0, current_time, &PowerupMode};
+  } else if (command.instruction == 'e') {
+    return (State) {command.argument, current_time, &InteractiveMode};
+  } else if (command.instruction == 'c') {
+    return (State) {command.argument, current_state.started_at, &CooldownMode};
+  }
+
+  return current_state;
 }
 
-void interactiveMode(LED *light, float energy, unsigned long started_at) {
+State InteractiveMode(LED *light, State current_state, Command command) {
   unsigned long current_time = millis();
 
-  // Light has been on - disable and work out next on time.
+  // Light has been on - disable it and work out next on time.
   if ((light->on_at + light->duration) < current_time) {
 
     // Turn the LED off.
@@ -148,14 +139,14 @@ void interactiveMode(LED *light, float energy, unsigned long started_at) {
     light->on = false;
 
     // Determine the brightness to use the next time the LED is switched on.
-    light->brightness = random(LERP(BRIGHT_LOWER_LE, BRIGHT_LOWER_HE, energy),
-                               LERP(BRIGHT_UPPER_LE, BRIGHT_UPPER_HE, energy));
+    light->brightness = random(LERP(BRIGHT_LOWER_LE, BRIGHT_LOWER_HE, current_state.energy),
+                               LERP(BRIGHT_UPPER_LE, BRIGHT_UPPER_HE, current_state.energy));
 
     // Determine how long the LED should be on for when turned on.
-    light->duration = random(LERP(DURATION_LE, DURATION_HE, energy));
+    light->duration = random(LERP(DURATION_LE, DURATION_HE, current_state.energy));
 
     // Determine when the LED should turn on.
-    light->on_at = current_time + random(LERP(COOLDOWN_LE, COOLDOWN_HE, energy));
+    light->on_at = current_time + random(LERP(COOLDOWN_LE, COOLDOWN_HE, current_state.energy));
   }
 
   // Light has been off - enable it.
@@ -163,17 +154,51 @@ void interactiveMode(LED *light, float energy, unsigned long started_at) {
     analogWrite(light->pin, light->brightness);
     light->on = true;
   }
+
+  if (command.instruction == 'a') {
+    return (State) {0.0, current_time, &PowerupMode};
+  } else if (command.instruction == 'e') {
+    return (State) {command.argument, current_state.started_at, &InteractiveMode};
+  } else if (command.instruction == 'c') {
+    return (State) {command.argument, current_time, &CooldownMode};
+  }
+
+  return current_state;
 }
 
-void powerupAnimation(LED *light, float energy, unsigned long started_at) {
+State PowerupMode(LED *light, State current_state, Command command) {
   unsigned long current_time = millis();
-  double delta_t = max((current_time - started_at) / ((double) POWERUP_LENGTH) - 0.3, 0.0);
+  double delta_t = max((current_time - current_state.started_at) / ((double) POWERUP_LENGTH) - 0.3, 0.0);
 
   if (light->on) {
     analogWrite(light->pin, LERP(light->brightness, 255, delta_t));
   } else {
     analogWrite(light->pin, LERP(0, 255, delta_t));
   }
+
+  // After the powerup animation has completed, return to interactive mode.
+  if (current_time >= (current_state.started_at + POWERUP_LENGTH)) {
+    return (State) {0.0, current_time, &InteractiveMode};
+  }
+
+  return current_state;
+}
+
+Command ReadCommand() {
+  // Not enough bytes for a command, return an empty command.
+  if (Serial.available() < 5) {
+    return (Command) {'*', 0.0};
+  }
+
+  union {
+    char b[4];
+    float f;
+  } ufloat;
+
+  // Read the command identifier and argument from the serial port.
+  char c = Serial.read();
+  Serial.readBytes(ufloat.b, 4);
+  return (Command) {c, ufloat.f};
 }
 
 /**
@@ -193,41 +218,14 @@ void setup() {
   state.updateState = &DisabledMode;
 }
 
-// Energy level ranges from -2.0 to 1.0
-// An Energy level less than -1.0 disables the sculpture completely.
-// An Energy level between -1.0 and 0.0 is a non-interactive sequence.
-// An Energy level between 0.0 and 1.0 is for the interactive sequence.
-float energy = -2.0f;
-boolean powerup = false;
-unsigned long powerup_started_at = 0;
-
-Command readCommand() {
-  // Not enough bytes for a command, return an empty command.
-  if (Serial.available() < 5) {
-    return (Command) {'*', 0.0, 0};
-  }
-
-  union {
-    char b[4];
-    float f;
-  } ufloat;
-
-  // Read the command identifier and argument from the serial port.
-  char c = Serial.read();
-  Serial.readBytes(ufloat.b, 4);
-  return (Command) {c, ufloat.f, millis()};
-}
-
 /**
  * Main Arduino loop.
  */
 void loop() {
-  Command c = readCommand();
+  Command c = ReadCommand();
 
   for (int i = 0; i < NUM_LIGHTS; i++) {
     state = state.updateState(&lights[i], state, c);
-
-    //strategy.updateState(&lights[i], strategy.energy, strategy.started_at);
 
     // Write to the light state to the arduino pin.
     // if (lights[i].on) {
@@ -236,25 +234,4 @@ void loop() {
     //   analogWrite(lights[i].pin, LOW);
     // }
   }
-
-  /*
-  for (int i = 0; i < NUM_LIGHTS; i++) {
-      if (powerup) {
-        powerupAnimation(&lights[i], powerup_started_at);
-
-      } else {
-        if (energy < -1.0) {
-          disabledMode(&lights[i], energy);
-        } else if (energy >= -1.0 && energy < 0.0) {
-          nonInteractiveMode(&lights[i], energy);
-        } else {
-          interactiveMode(&lights[i], energy);
-        }
-      }
-  }
-
-  // Turn the power up animation off after it has completed.
-  if (powerup && millis() >= (powerup_started_at + POWERUP_LENGTH)) {
-    powerup = false;
-  }*/
 }
