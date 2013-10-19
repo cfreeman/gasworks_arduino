@@ -48,10 +48,6 @@ int AnimatePulse(KeyFrame start, KeyFrame end, unsigned long current_time) {
   return LERP(start.intensity, end.intensity, delta_t);
 }
 
-int LERPDesc(int left, int right, float ratio) {
-  return left - LERP(left, right, abs(ratio));
-}
-
 State DisabledMode(LED *light, State current_state, unsigned long current_time, Command command) {
   // Disable the LED.
   if (light->on) {
@@ -77,9 +73,9 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
   // Determine the the next LED pulse
   if (current_time > light->end_low.t) {
     light->start_low.intensity = 0;
-    light->start_low.t = current_time + random(WARM_UP_COOLDOWN_LE - LERPDesc(WARM_UP_COOLDOWN_LE, WARM_UP_COOLDOWN_HE, current_state.energy));
+    light->start_low.t = current_time + random(WARM_UP_COOLDOWN_LE - LERP(WARM_UP_COOLDOWN_LE, WARM_UP_COOLDOWN_HE, current_state.energy));
 
-    light->start_high.intensity = LERPDesc(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, current_state.energy);
+    light->start_high.intensity = LERP(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, current_state.energy);
     light->start_high.t = light->start_low.t + 1;
 
     light->end_high.intensity = light->start_high.intensity;
@@ -91,7 +87,7 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
 
   // Determine the next state of the neurone.
   switch (command.instruction) {
-    case 'a':
+    case 'p':
     return (State) {0.0, current_time, &PowerupMode};
 
     case 'e':
@@ -106,8 +102,9 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
 }
 
 State InteractiveMode(LED *light, State current_state, unsigned long current_time, Command command) {
-  // Determine the next LED pulse
+
   if (current_time > light->end_low.t) {
+    // Determine the next LED pulse
     light->start_low.intensity = 0;
     light->start_low.t = current_time + random(LERP(COOLDOWN_LE, COOLDOWN_HE, current_state.energy));
 
@@ -120,11 +117,19 @@ State InteractiveMode(LED *light, State current_state, unsigned long current_tim
 
     light->end_low.intensity = 0;
     light->end_low.t = light->end_high.t + 1;
+
+  } else if (command.instruction == 'e' && abs(current_state.energy - command.argument) > 0.00001) {
+    // Update the ending time of the LED pulse if the energy level has increased.
+    light->end_high.intensity = light->start_high.intensity;
+    light->end_high.t = light->start_high.t + random(LERP(DURATION_LE, DURATION_HE, command.argument));
+
+    light->end_low.intensity = 0;
+    light->end_low.t = light->end_high.t + 1;
   }
 
   // Determine the next state of the neurone.
   switch (command.instruction) {
-    case 'a':
+    case 'p':
     return (State) {0.0, current_time, &PowerupMode};
 
     case 'e':
@@ -204,6 +209,8 @@ void loop() {
   int i = 5;
   for (int i = 0; i < NUM_LIGHTS; i++) {
     unsigned long t = millis();
+
+    // Update the LED, and get the latest state of the neurone.
     state = state.updateLED(&lights[i], state, t, c);
 
     // Determine the current brightness of the LED.
