@@ -64,4 +64,42 @@ State InteractiveMode(LED *light, State current_state, unsigned long current_tim
 
 State PowerupMode(LED *light, State current_state, unsigned long current_time, Command command);
 
+const int DURATION_HE = 250;                  // The duration LEDs will be on for when the neurone is at 'High' energy.
+const int DURATION_LE = 3000;                 // The duration LEDs will be on for when the neurone is at 'Low' energy.
+
+const int COOLDOWN_HE = 250;                  // The duration between LED flashes when the neurone is at 'High' Energy.
+const int COOLDOWN_LE = 3000;                 // The duration between LED flashes when the neurone is at 'Low' Energy.
+
+const int BRIGHT_LOWER_HE = 105;              // The dimmest the LED will be when the neurone is at 'High' Energy.
+const int BRIGHT_LOWER_LE = 5;                // The dimmest the LED will be when the neurone is at 'Low' Energy.
+
+const int BRIGHT_UPPER_HE = 255;              // The brightest the LED will be when the neurone is at 'High' Energy.
+const int BRIGHT_UPPER_LE = 20;               // The brightest the LED will be when the neurone is at 'Low' Energy.
+
+const int POWERUP_LENGTH = 3000;              // The length of the power up animation in milliseconds.
+
+const int WARM_UP_LOWER_DURATION_LE = 2500;
+const int WARM_UP_UPPER_DURATION_LE = 3000;
+
+const int WARM_UP_COOLDOWN_LE = 3000;
+const int WARM_UP_COOLDOWN_HE = 0;
+
+const int WARM_UP_BRIGHT_LE = 255;
+const int WARM_UP_BRIGHT_HE = 20;
+
+const int NUM_LIGHTS = 13;
+LED lights[] = {{1, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {2, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {3, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {4, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {5, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {6, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {7, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {8, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {9, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {10, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {11, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {12, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
+                {13, false, (KeyFrame){0, 0}, (KeyFrame){0, 2}, (KeyFrame){0, 2}, (KeyFrame){0, 3}}};
+
 #endif
