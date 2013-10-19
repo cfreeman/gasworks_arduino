@@ -101,10 +101,14 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
   }
 }
 
+
+
 State InteractiveMode(LED *light, State current_state, unsigned long current_time, Command command) {
 
-  if (current_time > light->end_low.t) {
-    // Determine the next LED pulse
+  if (current_time > light->end_low.t ||
+      command.instruction == 'e' && abs(current_state.energy - command.argument) > 0.00001) {
+
+    // Update the LED pulse
     light->start_low.intensity = 0;
     light->start_low.t = current_time + random(LERP(COOLDOWN_LE, COOLDOWN_HE, current_state.energy));
 
@@ -114,14 +118,6 @@ State InteractiveMode(LED *light, State current_state, unsigned long current_tim
 
     light->end_high.intensity = light->start_high.intensity;
     light->end_high.t = light->start_high.t + random(LERP(DURATION_LE, DURATION_HE, current_state.energy));
-
-    light->end_low.intensity = 0;
-    light->end_low.t = light->end_high.t + 1;
-
-  } else if (command.instruction == 'e' && abs(current_state.energy - command.argument) > 0.00001) {
-    // Update the ending time of the LED pulse if the energy level has increased.
-    light->end_high.intensity = light->start_high.intensity;
-    light->end_high.t = light->start_high.t + random(LERP(DURATION_LE, DURATION_HE, command.argument));
 
     light->end_low.intensity = 0;
     light->end_low.t = light->end_high.t + 1;
