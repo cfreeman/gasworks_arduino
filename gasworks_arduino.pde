@@ -101,8 +101,6 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
   }
 }
 
-
-
 State InteractiveMode(LED *light, State current_state, unsigned long current_time, Command command) {
 
   if (current_time > light->end_low.t ||
@@ -173,9 +171,29 @@ Command ReadCommand() {
   // Read the command identifier and argument from the serial port.
   char c = Serial.read();
   Serial.readBytes(ufloat.b, 4);
+
+  // Ack the command by writing the current acceleration of the camera back down the serial port.
+  int acc[VEC_LEN] = {analogRead(0), analogRead(1), analogRead(2)};
+  WriteAcceleration(acc);
+
   return (Command) {c, ufloat.f};
 }
 
+/**
+ * WriteAcceleration writes the acceleration value stored in acc down the serial port.
+ */
+void WriteAcceleration(int acc[VEC_LEN]) {
+  union {
+    char b[2];
+    int i;
+  } uInt;
+
+  for (int i = 0; i < VEC_LEN; i++) {
+    uInt.i = acc[i];
+    Serial.write(uInt.b[0]);
+    Serial.write(uInt.b[1]);
+  }
+}
 
 // The current state of the neurone that the arduino is rendering as a lighting sequence.
 State state;
