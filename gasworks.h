@@ -87,8 +87,6 @@ const int WARM_UP_COOLDOWN_HE = 0;
 const int WARM_UP_BRIGHT_LE = 255;
 const int WARM_UP_BRIGHT_HE = 20;
 
-const int VEC_LEN = 3;
-
 const int NUM_LIGHTS = 13;
 LED lights[] = {{1, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
                 {2, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
