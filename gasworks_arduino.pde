@@ -220,7 +220,6 @@ void setup() {
 void loop() {
   Command c = ReadCommand();
 
-  int i = 5;
   for (int i = 0; i < NUM_LIGHTS; i++) {
     unsigned long t = millis();
 
