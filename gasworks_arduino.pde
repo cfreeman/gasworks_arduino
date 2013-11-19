@@ -78,12 +78,12 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
     light->start_high.intensity = LERP(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, current_state.energy);
     light->start_high.t = light->start_low.t + 1;
 
-    light->end_high.intensity = light->start_high.intensity;
-    light->end_high.t = light->start_high.t + 1;
+    light->end_high.intensity = 20;
+    light->end_high.t = light->start_high.t + random(LERP(WARM_UP_LOWER_DURATION_LE, WARM_UP_LOWER_DURATION_HE, current_state.energy),
+                                                  LERP(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, current_state.energy));    
 
     light->end_low.intensity = 0;
-    light->end_low.t = light->end_high.t + random(LERP(WARM_UP_LOWER_DURATION_LE, WARM_UP_LOWER_DURATION_HE, current_state.energy),
-                                                  LERP(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, current_state.energy));    
+    light->end_low.t = light->end_high.t + 1;
   }
 
   // Determine the next state of the neurone.
