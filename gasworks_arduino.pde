@@ -108,14 +108,16 @@ State InteractiveMode(LED *light, State current_state, unsigned long current_tim
 
     // Update the LED pulse
     light->start_low.intensity = 0;
-    light->start_low.t = current_time + random(LERP(COOLDOWN_LE, COOLDOWN_HE, current_state.energy));
+    light->start_low.t = current_time + random(LERP(COOLDOWN_LOWER_LE, COOLDOWN_LOWER_HE, current_state.energy),
+                                               LERP(COOLDOWN_UPPER_LE, COOLDOWN_UPPER_HE, current_state.energy));
 
     light->start_high.intensity = random(LERP(BRIGHT_LOWER_LE, BRIGHT_LOWER_HE, current_state.energy),
                                          LERP(BRIGHT_UPPER_LE, BRIGHT_UPPER_HE, current_state.energy));
     light->start_high.t = light->start_low.t + 1;
 
     light->end_high.intensity = light->start_high.intensity;
-    light->end_high.t = light->start_high.t + random(LERP(DURATION_LE, DURATION_HE, current_state.energy));
+    light->end_high.t = light->start_high.t + random(LERP(DURATION_LOWER_LE, DURATION_LOWER_HE, current_state.energy),
+                                                     LERP(DURATION_UPPER_LE, DURATION_UPPER_HE, current_state.energy));
 
     light->end_low.intensity = 0;
     light->end_low.t = light->end_high.t + 1;
