@@ -72,17 +72,17 @@ State DisabledMode(LED *light, State current_state, unsigned long current_time, 
 State CooldownMode(LED *light, State current_state, unsigned long current_time, Command command) {
   // Determine the the next LED pulse
   if (current_time > light->end_low.t || (current_time - current_state.started_at) <= 100) {
-    light->start_low.intensity = 0;
+    light->start_low.intensity = light->end_low.intensity;
     light->start_low.t = current_time + random(WARM_UP_COOLDOWN_LE - LERP(WARM_UP_COOLDOWN_LE, WARM_UP_COOLDOWN_HE, current_state.energy));
 
     light->start_high.intensity = LERP(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, current_state.energy);
     light->start_high.t = light->start_low.t + 1;
 
-    light->end_high.intensity = 20;
+    light->end_high.intensity = LERP(20, 0, current_state.energy);
     light->end_high.t = light->start_high.t + random(LERP(WARM_UP_LOWER_DURATION_LE, WARM_UP_LOWER_DURATION_HE, current_state.energy),
-                                                  LERP(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, current_state.energy));    
+                                                     LERP(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, current_state.energy));;
 
-    light->end_low.intensity = 0;
+    light->end_low.intensity = LERP(20, 0, current_state.energy);
     light->end_low.t = light->end_high.t + 1;
   }
 

@@ -66,8 +66,8 @@ State PowerupMode(LED *light, State current_state, unsigned long current_time, C
 
 const int DURATION_LOWER_HE = 250;                  // The duration LEDs will be on for when the neurone is at 'high' energy.
 const int DURATION_UPPER_HE = 350;
-const int DURATION_LOWER_LE = 5000;                 // The duration LEDs will be on for when the neurone is at 'low' energy.
-const int DURATION_UPPER_LE = 6000;
+const int DURATION_LOWER_LE = 4000;                 // The duration LEDs will be on for when the neurone is at 'low' energy.
+const int DURATION_UPPER_LE = 5000;
 
 const int COOLDOWN_LOWER_HE = 150;            // The shortest duration between LED flashes when the neurone is at 'high' energy.
 const int COOLDOWN_UPPER_HE = 250;            // The longest duration between LED flashes when the neurone is at 'high' energy.
@@ -80,13 +80,13 @@ const int BRIGHT_LOWER_LE = 5;                // The dimmest the LED will be whe
 const int BRIGHT_UPPER_HE = 255;              // The brightest the LED will be when the neurone is at 'high' Energy.
 const int BRIGHT_UPPER_LE = 20;               // The brightest the LED will be when the neurone is at 'low' Energy.
 
-const int POWERUP_LENGTH = 3000;              // The length of the power up animation in milliseconds.
+const int POWERUP_LENGTH = 30000;             // The length of the power up animation in milliseconds.
 
-const int WARM_UP_LOWER_DURATION_LE = 30000;
-const int WARM_UP_UPPER_DURATION_LE = 43000;
+const int WARM_UP_LOWER_DURATION_LE = 20000;
+const int WARM_UP_UPPER_DURATION_LE = 30000;
 
-const int WARM_UP_LOWER_DURATION_HE = 2500;
-const int WARM_UP_UPPER_DURATION_HE = 4000;
+const int WARM_UP_LOWER_DURATION_HE = DURATION_LOWER_LE;
+const int WARM_UP_UPPER_DURATION_HE = DURATION_UPPER_LE;
 
 const int WARM_UP_COOLDOWN_LE = 6000;
 const int WARM_UP_COOLDOWN_HE = 0;
