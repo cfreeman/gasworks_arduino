@@ -64,8 +64,8 @@ State InteractiveMode(LED *light, State current_state, unsigned long current_tim
 
 State PowerupMode(LED *light, State current_state, unsigned long current_time, Command command);
 
-const int DURATION_LOWER_HE = 250;                  // The duration LEDs will be on for when the neurone is at 'high' energy.
-const int DURATION_UPPER_HE = 350;
+const int DURATION_LOWER_HE = 150;                  // The duration LEDs will be on for when the neurone is at 'high' energy.
+const int DURATION_UPPER_HE = 250;
 const int DURATION_LOWER_LE = 4000;                 // The duration LEDs will be on for when the neurone is at 'low' energy.
 const int DURATION_UPPER_LE = 5000;
 
