@@ -82,7 +82,7 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
     light->end_high.t = light->start_high.t + random(LERP(WARM_UP_LOWER_DURATION_LE, WARM_UP_LOWER_DURATION_HE, current_state.energy),
                                                      LERP(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, current_state.energy));;
 
-    light->end_low.intensity = LERP(20, 0, current_state.energy);
+    light->end_low.intensity = light->end_high.intensity;
     light->end_low.t = light->end_high.t + 1;
   }
 
@@ -210,7 +210,7 @@ void loop() {
     state = state.updateLED(&lights[i], state, t, c);
 
     // Determine the current brightness of the LED.
-    int b = 0;
+    int b = lights[i].start_low.intensity;
 
     if (t > lights[i].start_low.t && t <= lights[i].start_high.t) {
       b = AnimatePulse(lights[i].start_low, lights[i].start_high, t);
