@@ -78,7 +78,7 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
     light->start_high.intensity = LERP(WARM_UP_BRIGHT_LE, WARM_UP_BRIGHT_HE, current_state.energy);
     light->start_high.t = light->start_low.t + 1;
 
-    light->end_high.intensity = LERP(20, 0, current_state.energy);
+    light->end_high.intensity = LERP(20, 5, current_state.energy);
     light->end_high.t = light->start_high.t + random(LERP(WARM_UP_LOWER_DURATION_LE, WARM_UP_LOWER_DURATION_HE, current_state.energy),
                                                      LERP(WARM_UP_UPPER_DURATION_LE, WARM_UP_UPPER_DURATION_HE, current_state.energy));;
 

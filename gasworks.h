@@ -87,14 +87,14 @@ const int POWERUP_LENGTH = 20000;             // The length of the power up anim
 const int WARM_UP_LOWER_DURATION_LE = 20000;
 const int WARM_UP_UPPER_DURATION_LE = 30000;
 
-const int WARM_UP_LOWER_DURATION_HE = DURATION_LOWER_LE;
-const int WARM_UP_UPPER_DURATION_HE = DURATION_UPPER_LE;
+const int WARM_UP_LOWER_DURATION_HE = 3000;
+const int WARM_UP_UPPER_DURATION_HE = 4000;
 
 const int WARM_UP_COOLDOWN_LE = 6000;
 const int WARM_UP_COOLDOWN_HE = 0;
 
 const int WARM_UP_BRIGHT_LE = 255;
-const int WARM_UP_BRIGHT_HE = 20;
+const int WARM_UP_BRIGHT_HE = 5;
 
 const int NUM_LIGHTS = 13;
 LED lights[] = {{44, false, false, (KeyFrame){0, 0}, (KeyFrame){0, 1}, (KeyFrame){0, 2}, (KeyFrame){0, 3}},
