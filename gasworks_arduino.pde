@@ -103,25 +103,34 @@ State CooldownMode(LED *light, State current_state, unsigned long current_time, 
 }
 
 State InteractiveMode(LED *light, State current_state, unsigned long current_time, Command command) {
-
   if (current_time > light->end_low.t ||
       command.instruction == 'e' && abs(current_state.energy - command.argument) > 0.00001) {
 
     // Update the LED pulse
     light->start_low.intensity = 0;
+
+    unsigned long t = random(LERP(COOLDOWN_LOWER_LE, COOLDOWN_LOWER_HE, current_state.energy),
+                             LERP(COOLDOWN_UPPER_LE, COOLDOWN_UPPER_HE, current_state.energy));
+
+    // If we have transitioned from a powerup - have a shorter delay for the startup sequence.
+    if (light->powerUpProcessed) {
+        t = random(LERP(COOLDOWN_UPPER_LE, COOLDOWN_UPPER_HE, current_state.energy));
+        light->powerUpProcessed = false;
+    }
+
     light->start_low.t = current_time + random(LERP(COOLDOWN_LOWER_LE, COOLDOWN_LOWER_HE, current_state.energy),
                                                LERP(COOLDOWN_UPPER_LE, COOLDOWN_UPPER_HE, current_state.energy));
 
     light->start_high.intensity = random(LERP(BRIGHT_LOWER_LE, BRIGHT_LOWER_HE, current_state.energy),
                                          LERP(BRIGHT_UPPER_LE, BRIGHT_UPPER_HE, current_state.energy));
-    light->start_high.t = light->start_low.t + 1;
+    light->start_high.t = light->start_low.t + LERP(100, 1, current_state.energy);
 
     light->end_high.intensity = light->start_high.intensity;
     light->end_high.t = light->start_high.t + random(LERP(DURATION_LOWER_LE, DURATION_LOWER_HE, current_state.energy),
                                                      LERP(DURATION_UPPER_LE, DURATION_UPPER_HE, current_state.energy));
 
     light->end_low.intensity = 0;
-    light->end_low.t = light->end_high.t + 1;
+    light->end_low.t = light->end_high.t + LERP(100, 1, current_state.energy);
   }
 
   // Determine the next state of the neurone.
@@ -141,15 +150,18 @@ State InteractiveMode(LED *light, State current_state, unsigned long current_tim
 }
 
 State PowerupMode(LED *light, State current_state, unsigned long current_time, Command command) {
-  // Update the current LED pulse.
-  light->end_high.intensity = 255;
-  light->end_high.t = (current_state.started_at + POWERUP_LENGTH);
+  if (!light->powerUpProcessed) {
+    // Update the current LED pulse.
+    light->end_high.intensity = 255;
+    light->end_high.t = (current_state.started_at + POWERUP_LENGTH);
 
-  light->end_low.intensity = 0;
-  light->end_low.t = light->end_high.t + 1;
+    light->end_low.intensity = 0;
+    light->end_low.t = light->end_high.t + random(COOLDOWN_LOWER_LE, 2*COOLDOWN_UPPER_LE);
+    light->powerUpProcessed = true;
+  }
 
   // After the powerup animation has completed, return to interactive mode.
-  if (current_time >= (current_state.started_at + POWERUP_LENGTH)) {
+  if (current_time >= light->end_low.t) {
     return (State) {0.0, current_time, &InteractiveMode};
   }
 
